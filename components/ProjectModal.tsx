@@ -9,6 +9,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import { TextInput } from "./TextInput";
 
 interface ProjectModalProps {
   project: Partial<Project> | null;
