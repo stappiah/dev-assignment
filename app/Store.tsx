@@ -1,14 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { combineReducers } from "redux";
 import { persistStore, persistReducer } from "redux-persist";
-import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
+import storage from "redux-persist/lib/storage";
+import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
 import { apiSlice } from "./api/ApiSlice";
 import authReducer from "./api/AuthSlice";
 
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["auth"], // Add slices you want to persist here
+  whitelist: ["auth"],
 };
 
 const rootReducer = combineReducers({
@@ -22,7 +23,9 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false,
+      serializableCheck: {
+	ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
     }).concat(apiSlice.middleware),
 });
 

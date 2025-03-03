@@ -4,12 +4,13 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useRegisterMutation } from "../api/ApiSlice";
 import { useDispatch } from "react-redux";
-import { setToken } from "../api/AuthSlice";
+import { setCredentials } from "../api/AuthSlice";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import loginImage from "../../asset/loginBG.jpg";
-import { LoadingButton } from "@/components/Button";
 import { AuthType } from "../Types";
+import PasswordComponent from "@/components/PasswordComponent";
+import LoginSignupLoader from "@/components/LoginSignupLoader";
 
 const Signup = () => {
   const router = useRouter();
@@ -18,15 +19,15 @@ const Signup = () => {
   const initialValues = {
     username: "",
     password: "",
-    firstName: "",
-    lastName: "",
+    confirm_password: "",
   };
 
   const validationSchema = Yup.object({
     username: Yup.string().required("Username is required"),
     password: Yup.string().required("Password is required"),
-    firstName: Yup.string().required("First name is required"),
-    lastName: Yup.string().required("Last name is required"),
+    confirm_password: Yup.string()
+    .oneOf([Yup.ref("password"), ""], "Passwords must match")
+    .required("Re-type password"),
   });
 
   const [error, setError] = useState("");
@@ -36,13 +37,18 @@ const Signup = () => {
   const handleSubmit = async (values: {
     username: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    confirm_password: string;
   }) => {
     try {
       const result: AuthType = await register(values).unwrap();
+      dispatch(
+        setCredentials({
+          id: result.data.id,
+          username: result.data.username,
+          token: result.data.token,
+        })
+      );
       router.push("/dashboard");
-      dispatch(setToken(result?.data?.token));
     } catch (err:any) {
       setError(err?.data?.message);
     }
@@ -78,47 +84,14 @@ const Signup = () => {
                 className="text-red-500 text-sm"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium">First Name</label>
-              <Field
-                type="text"
-                name="firstName"
-                className="w-full p-2 border rounded"
-              />
-              <ErrorMessage
-                name="firstName"
-                component="div"
-                className="text-red-500 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Last Name</label>
-              <Field
-                type="text"
-                name="lastName"
-                className="w-full p-2 border rounded"
-              />
-              <ErrorMessage
-                name="lastName"
-                component="div"
-                className="text-red-500 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Password</label>
-              <Field
-                type="password"
-                name="password"
-                className="w-full p-2 border rounded"
-              />
-              <ErrorMessage
-                name="password"
-                component="div"
-                className="text-red-500 text-sm"
-              />
-            </div>
+	    <div>
+		<PasswordComponent label="Password" name="password" />
+	    </div>
+	    <div>
+		<PasswordComponent label="Confirm Password" name="confirm_password" />
+	    </div>
             {isLoading ? (
-              <LoadingButton />
+              <LoginSignupLoader />
             ) : (
               <button
                 type="submit"

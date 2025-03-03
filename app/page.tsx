@@ -3,15 +3,18 @@
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import loginImage from "../asset/loginBG.jpg";
 import { useLoginMutation } from "./api/ApiSlice";
-import { setToken } from "./api/AuthSlice";
-import { useDispatch } from "react-redux";
-import { LoadingButton } from "@/components/Button";
+import { setCredentials } from "./api/AuthSlice";
+import { useDispatch, useSelector } from "react-redux";
 import { AuthType } from "./Types";
+import PasswordComponent from "@/components/PasswordComponent";
+import LoginSignupLoader from "@/components/LoginSignupLoader";
+import { RootState } from "./Store";
 
 const Login = () => {
+  const { token } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
   const dispatch = useDispatch();
   const [error, setError] = useState("");
@@ -24,16 +27,30 @@ const Login = () => {
     password: Yup.string().required("Password is required"),
   });
 
+  useEffect(() => {
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, [token, router]);
+
   const handleSubmit = async (values: {
     username: string;
     password: string;
   }) => {
     try {
       const result: AuthType = await login(values).unwrap();
-      dispatch(setToken(result.data.token));
+
+      dispatch(
+        setCredentials({
+          id: result.data.id,
+          username: result.data.username,
+          token: result.data.token,
+        })
+      );
+
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.data?.message);
+      setError(err?.data?.message || "Login failed. Please try again.");
     }
   };
 
@@ -69,20 +86,10 @@ const Login = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Password</label>
-              <Field
-                type="password"
-                name="password"
-                className="w-full p-2 border rounded"
-              />
-              <ErrorMessage
-                name="password"
-                component="div"
-                className="text-red-500 text-sm"
-              />
+              <PasswordComponent label="Password" name="password" />
             </div>
             {isLoading ? (
-              <LoadingButton />
+              <LoginSignupLoader />
             ) : (
               <button
                 type="submit"

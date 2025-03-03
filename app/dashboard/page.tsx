@@ -1,52 +1,33 @@
 "use client";
 
-import { Button, LoadingButton } from "@/components/Button";
+import { Button } from "@/components/Button";
 import { Card, CardContent } from "@/components/Card";
 import { Input } from "@/components/InputComponent";
 import { Select, SelectItem } from "@/components/SelectComponent";
-import { useState, useEffect } from "react";
-import {
-  useCreateProjectMutation,
-  useGetProjectsQuery,
-  useUpdateProjectMutation,
-} from "../api/ApiSlice";
+import { useState } from "react";
+import { useGetProjectsQuery } from "../api/ApiSlice";
 import { Project } from "../Types";
-import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-} from "@mui/material";
-import { Field, Form, Formik } from "formik";
-import * as Yup from "yup";
-import { TextInput } from "@/components/TextInput";
-
-const ProjectSchema = Yup.object().shape({
-  name: Yup.string().required("Name is required"),
-  partner: Yup.string().required("Partner is required"),
-  beneficiary_mmdce: Yup.string().required("Beneficiary MMDCE is required"),
-  beneficiary_community: Yup.string().required(
-    "Beneficiary Community is required"
-  ),
-  amount: Yup.number()
-    .required("Amount is required")
-    .positive("Amount must be positive"),
-  amount_currency: Yup.string().required("Currency is required"),
-  description: Yup.string().required("Description is required"),
-  status: Yup.string().required("Status is required"),
-});
+import { FaUserCircle } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
+import { clearAuth, selectUsername } from "../api/AuthSlice";
+import { CircularProgress } from "@mui/material";
+import { persistor } from "../Store";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { data, error, isLoading, refetch } = useGetProjectsQuery();
-  const [createProject] = useCreateProjectMutation();
-  const [updateProject] = useUpdateProjectMutation();
+  const { data, error, isLoading } = useGetProjectsQuery();
+  const username = useSelector(selectUsername);
+  const dispatch = useDispatch();
+  const router = useRouter();
   const projects: Project[] = data?.data || [];
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(clearAuth());
+    persistor?.purge();
+    router.push("/");
+  };
 
   const filteredProjects = projects?.filter(
     (project) =>
@@ -54,28 +35,31 @@ export default function Dashboard() {
       (statusFilter === "" || project.status === statusFilter)
   );
 
-  const handleCreateOrUpdateProject = async (project: Partial<Project>) => {
-    setLoading(true);
-    if (currentProject) {
-      await updateProject({
-        id: currentProject?.id?.toString(),
-        data: project,
-      });
-    } else {
-      await createProject(project);
-    }
-    setLoading(false);
-    setIsModalOpen(false);
-    refetch();
-  };
-
-
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <CircularProgress size={50} sx={{ color: "#2B7FFF" }} />
+      </div>
+    );
   if (error) return <div>Error loading projects</div>;
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-center">Dashboard</h1>
+      {/* Header with Avatar and Logout */}
+      <div className="flex justify-between items-center mb-6 bg-white p-4 shadow-md rounded-lg">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <FaUserCircle className="text-3xl text-gray-600" />
+            <span className="text-lg font-medium">{username}</span>
+          </div>
+          <Button onClick={handleLogout} variant="destructive">
+            Logout
+          </Button>
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent>Total: {data?.count}</CardContent>
@@ -102,16 +86,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-      <div className="flex justify-end mb-6">
-        <Button
-          onClick={() => {
-            setCurrentProject(null);
-            setIsModalOpen(true);
-          }}
-        >
-          Create Project
-        </Button>
-      </div>
+
+      {/* Search and Filter Controls */}
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <Input
           placeholder="Search by name"
@@ -131,6 +107,7 @@ export default function Dashboard() {
         </Select>
       </div>
 
+      {/* Projects Table */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse shadow-lg bg-white rounded-lg">
           <thead>
@@ -139,7 +116,6 @@ export default function Dashboard() {
               <th className="p-3">Partner</th>
               <th className="p-3">Status</th>
               <th className="p-3">Amount</th>
-              <th className="p-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -156,204 +132,11 @@ export default function Dashboard() {
                 <td className="border border-[#ddd] p-2">
                   {project.amount_currency} {project.amount}
                 </td>
-                <td className="border border-[#ddd] p-2 flex justify-center">
-                  <Button
-                    className="mr-2"
-                    onClick={() => {
-                      setCurrentProject(project);
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                  <Button variant="destructive"                     onClick={() => {
-                      setCurrentProject(project);
-                      setIsDeleteModalOpen(true);
-                    }}>Delete</Button>
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      <Dialog
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        BackdropProps={{
-          style: { backgroundColor: "rgba(0, 0, 0, 0.5)" },
-        }}
-      >
-        <DialogTitle>
-          {currentProject ? "Edit Project" : "Create Project"}
-        </DialogTitle>
-        <Formik
-          enableReinitialize
-          initialValues={{
-            name: currentProject?.name || "",
-            partner: currentProject?.partner || "",
-            beneficiary_mmdce: currentProject?.beneficiary_mmdce || "",
-            beneficiary_community: currentProject?.beneficiary_community || "",
-            amount: currentProject?.amount || "",
-            amount_currency: currentProject?.amount_currency || "GHS",
-            description: currentProject?.description || "",
-            status: currentProject?.status || "Not Started",
-            stateDate: currentProject?.stateDate || "",
-            endDate: currentProject?.endDate || "",
-            category: 1,
-          }}
-          validationSchema={ProjectSchema}
-          onSubmit={handleCreateOrUpdateProject}
-        >
-          {({ isSubmitting }) => (
-            <Form>
-              <DialogContent>
-                <div className="space-y-4">
-                  <TextInput
-                    label="Name"
-                    name="name"
-                    type="text"
-                    placeholder="Project Name"
-                  />
-                  <TextInput
-                    label="Partner"
-                    name="partner"
-                    type="text"
-                    placeholder="Partner Name"
-                  />
-                  <TextInput
-                    label="Beneficiary MMDCE"
-                    name="beneficiary_mmdce"
-                    type="text"
-                    placeholder="Beneficiary MMDCE"
-                  />
-                  <TextInput
-                    label="Beneficiary Community"
-                    name="beneficiary_community"
-                    type="text"
-                    placeholder="Beneficiary Community"
-                  />
-                  <TextInput
-                    label="Amount"
-                    name="amount"
-                    type="number"
-                    placeholder="Project Amount"
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Currency
-                    </label>
-                    <Field
-                      as="select"
-                      name="amount_currency"
-                      className="border p-3 rounded-lg w-full"
-                    >
-                      <option value="GHS">GHS</option>
-                      <option value="USD">USD</option>
-                    </Field>
-                  </div>
-
-                  <TextInput
-                    label="Description"
-                    name="description"
-                    type="text"
-                    placeholder="Project Description"
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Status
-                    </label>
-                    <Field
-                      as="select"
-                      name="status"
-                      className="border p-3 rounded-lg w-full"
-                    >
-                      <option value="Not Started">Not Started</option>
-                      <option value="Ongoing">Ongoing</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Delayed">Delayed</option>
-                    </Field>
-                  </div>
-                  <TextInput
-                    label="Start Date"
-                    name="stateDate"
-                    type="date"
-                    placeholder="Start Date"
-                  />
-                  <TextInput
-                    label="End Date"
-                    name="endDate"
-                    type="date"
-                    placeholder="End Date"
-                  />
-                </div>
-              </DialogContent>
-
-              <DialogActions>
-                <Button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="mr-2"
-                >
-                  Cancel
-                </Button>
-                {isSubmitting ? (
-                  <div className="w-[100%]">
-
-                    <LoadingButton />
-                  </div>
-                ) : (
-                  <DialogActions>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {currentProject ? "Update" : "Save"}
-                    </Button>
-                  </DialogActions>
-                )}
-              </DialogActions>
-            </Form>
-          )}
-        </Formik>
-      </Dialog>
-
-      {/* Delete Modal */}
-      <Dialog
-        open={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        BackdropProps={{
-          style: { backgroundColor: "rgba(0, 0, 0, 0.5)" },
-        }}
-      >
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <p>Are you sure you want to delete {currentProject?.name}?</p>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            type="button"
-            onClick={() => setIsDeleteModalOpen(false)}
-            className="mr-2"
-          >
-            Cancel
-          </Button>
-          <div className="w-[100%]">
-
-          <Button
-            variant="destructive"
-            onClick={() => setIsDeleteModalOpen(false)}
-            disabled={loading}
-          >
-            {loading ? "Deleting..." : "Delete"}
-          </Button>
-          </div>
-        </DialogActions>
-      </Dialog>
     </div>
   );
 }
