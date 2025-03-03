@@ -38,7 +38,7 @@ export function LoadingButton() {
   return (
     <button
       disabled
-      className="px-4 py-2 rounded text-white w-[100px] font-medium flex items-center justify-center bg-blue-500"
+      className="px-4 py-2 rounded text-white font-medium flex items-center justify-center bg-blue-500"
     >
       <CircularProgress size={20} sx={{ color: "white" }} />
     </button>

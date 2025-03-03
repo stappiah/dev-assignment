@@ -303,7 +303,10 @@ export default function Dashboard() {
                   Cancel
                 </Button>
                 {isSubmitting ? (
-                  <LoadingButton />
+                  <div className="w-[100%]">
+
+                    <LoadingButton />
+                  </div>
                 ) : (
                   <DialogActions>
                     <Button type="submit" disabled={isSubmitting}>
@@ -339,6 +342,8 @@ export default function Dashboard() {
           >
             Cancel
           </Button>
+          <div className="w-[100%]">
+
           <Button
             variant="destructive"
             onClick={() => setIsDeleteModalOpen(false)}
@@ -346,6 +351,7 @@ export default function Dashboard() {
           >
             {loading ? "Deleting..." : "Delete"}
           </Button>
+          </div>
         </DialogActions>
       </Dialog>
     </div>

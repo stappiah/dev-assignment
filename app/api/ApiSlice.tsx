@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../Store';
-import { ProjectResponse } from '../Types';
+import { AuthType, ProjectResponse } from '../Types';
 
 export const apiSlice = createApi({
   reducerPath: 'api',
@@ -17,14 +17,14 @@ export const apiSlice = createApi({
   tagTypes: ['Projects', 'Stats'],
   endpoints: (builder) => ({
     // User Authentication
-    login: builder.mutation<{ token: string }, { username: string; password: string }>({
+    login: builder.mutation<AuthType, { username: string; password: string }>({
       query: (credentials) => ({
         url: '/users/login/',
         method: 'POST',
         body: credentials,
       }),
     }),
-    register: builder.mutation<{ message: string }, { username: string; password: string }>({
+    register: builder.mutation<AuthType, { username: string; password: string }>({
       query: (credentials) => ({
         url: '/users/register/',
         method: 'POST',

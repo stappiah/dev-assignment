@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import loginImage from "../../asset/loginBG.jpg";
 import { LoadingButton } from "@/components/Button";
+import { AuthType } from "../Types";
 
 const Signup = () => {
   const router = useRouter();
@@ -39,11 +40,11 @@ const Signup = () => {
     lastName: string;
   }) => {
     try {
-      const result = await register(values).unwrap();
+      const result: AuthType = await register(values).unwrap();
       router.push("/dashboard");
-      // dispatch(setToken(result));
-    } catch (err) {
-      setError(err?.data?.message || "An unexpected error occurred");
+      dispatch(setToken(result?.data?.token));
+    } catch (err:any) {
+      setError(err?.data?.message);
     }
   };
 

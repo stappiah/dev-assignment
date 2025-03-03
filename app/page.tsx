@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import loginImage from "../asset/loginBG.jpg";
 import { useLoginMutation } from "./api/ApiSlice";
 import { setToken } from "./api/AuthSlice";
 import { useDispatch } from "react-redux";
 import { LoadingButton } from "@/components/Button";
+import { AuthType } from "./Types";
 
 const Login = () => {
   const router = useRouter();
@@ -28,10 +29,10 @@ const Login = () => {
     password: string;
   }) => {
     try {
-      const result = await login(values).unwrap();
-      dispatch(setToken(result?.data?.token));
+      const result: AuthType = await login(values).unwrap();
+      dispatch(setToken(result.data.token));
       router.push("/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       setError(err?.data?.message);
     }
   };

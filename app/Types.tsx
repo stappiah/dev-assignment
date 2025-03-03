@@ -33,3 +33,13 @@ export interface ProjectResponse {
   count: number;
   data: Project[];
 }
+
+export interface AuthType {
+  success: boolean;
+  message: string;
+  data: {
+    id: number;
+    username: string;
+    token: string;
+  };
+}
